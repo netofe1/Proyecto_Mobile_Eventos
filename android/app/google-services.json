@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "549299790233",
+    "project_id": "dam301ejemploestudiantes",
+    "storage_bucket": "dam301ejemploestudiantes.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:549299790233:android:ee4255eb1fbef631a63308",
+        "android_client_info": {
+          "package_name": "cl.dam301.ejemplofirebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHQ5fMqioh9tZhVOWgeFsi4y7PwV4nw2Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
