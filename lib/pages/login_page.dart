@@ -1,111 +1,231 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ejemplo_validar_form/services/firestore_service.dart';
+import 'package:ejemplo_validar_form/widget/D_Eventos.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/provider.dart';
+
+
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  TextEditingController emailCtrl = TextEditingController();
-  TextEditingController passwordCtrl = TextEditingController();
-  String msgError = '';
+  final AssetImage fondo = AssetImage('assets/images/Fondo_Eventos2.png');
+
+  final AssetImage fondo1 = AssetImage('assets/images/Fondo_Eventos.png');
+
+  final formatoFecha = DateFormat('dd-MM-yyyy hh:mm');
+
+  var respuesta = 'todos';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [Colors.yellow.shade700, Color(0xFF051E34)],
-          ),
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [  
+            Icon(MdiIcons.firework,color: Colors.lightBlueAccent,size: 40,),       
+            Text('Lista Eventos',style: TextStyle(fontSize: 30,fontWeight: FontWeight.bold,color: Colors.white),),
+            Spacer(),
+          ],
         ),
-        child: Container(
-          margin: EdgeInsets.only(top: 50),
-          decoration: BoxDecoration(
-            color: Color(0xAAFFFFFF),
-            borderRadius: BorderRadius.circular(15),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+            image: DecorationImage(image: fondo, fit: BoxFit.cover),
           ),
-          child: Form(
-            child: Container(
-              margin: EdgeInsets.symmetric(vertical: 180, horizontal: 20),
-              color: Colors.white,
-              child: ListView(
-                children: [
-                  Icon(MdiIcons.firebase, color: Colors.yellow.shade800, size: 70),
-                  //email
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 40, vertical: 0),
-                    child: TextFormField(
-                      controller: emailCtrl,
-                      decoration: InputDecoration(labelText: 'Email'),
-                      keyboardType: TextInputType.emailAddress,
+        child: Column(
+          children: [
+            
+            //LISTA DE EVENTOS
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: StreamBuilder(
+                  stream: FirestoreService().FiltrarEventos(respuesta),
+                  builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    } else {
+                      return ListView.separated(
+                        separatorBuilder: (context, index) => Divider(),
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          var evento = snapshot.data!.docs[index];
+                          DateTime fechaEvento = evento['fechaYHora'].toDate();
+                          bool esProximo = fechaEvento.isAfter(DateTime.now()) && fechaEvento.isBefore(DateTime.now().add(Duration(days: 3)));
+                          return ListTile(
+                              leading: Icon(
+                                esProximo ? Icons.star : Icons.event,
+                                color: esProximo ? Colors.orange : Colors.black,),
+                              title: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    children: [
+                                      SizedBox(width: 180, child: Text(evento['nombre'],style: TextStyle(fontWeight: FontWeight.bold,fontSize:17 ,color: esProximo ? Color(0xff4FFFB9) :null))),
+                                      SizedBox(width: 180, child: Text(evento['estado'],style: TextStyle(fontWeight: FontWeight.bold,fontSize:17,color: esProximo ?  Color(0xff4FFFB9) :null))),
+                                      SizedBox(width: 180, child: Text(formatoFecha.format(evento['fechaYHora'].toDate()),style: TextStyle(fontWeight: FontWeight.bold,fontSize:17,color: esProximo ?  Color(0xff4FFFB9) :null))),
+                                    ],
+                                  ),
+                                  ElevatedButton.icon(
+                                      style: ButtonStyle(backgroundColor: MaterialStatePropertyAll(Colors.transparent) ),
+                                      onPressed: (){
+                                          setState(() {
+                                              FirestoreService().Incremento(evento.id);
+                                          });
+                                          }, 
+                                      icon: Icon(Icons.favorite,color: Colors.red,),
+                                      label: Text(evento['cont'].toString(),style: Theme.of(context).textTheme.headlineMedium,), //label text 
+                                  )
+                                ],
+                              ),
+                              subtitle: Row(children: [
+                                  
+                              ],),
+                              
+                              onLongPress: () {
+                                monstrarInfoEvento(context, evento);
+                                                                
+                              },
+                            );
+                        },
+                      );
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      drawer: Drawer(
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(image: fondo1, fit: BoxFit.cover),
+          ),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/Fondo_IZ.jpeg'),
+                    fit: BoxFit.cover)
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(MdiIcons.firework, color: Colors.deepPurpleAccent, size: 40),
+                        SizedBox(width: 10),
+                        Text('Menu Eventos', style: TextStyle(fontSize: 24, fontWeight:
+                        FontWeight.bold, color: Colors.black)),
+                      ],
                     ),
-                  ),
-                  //password
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 40, vertical: 0),
-                    child: TextFormField(
-                      controller: passwordCtrl,
-                      decoration: InputDecoration(labelText: 'Password'),
-                      obscureText: true,
-                    ),
-                  ),
-                  //boton
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                    width: double.infinity,
-                    child: FilledButton(
-                      child: Text('Iniciar Sesión'),
-                      onPressed: () async {
-                        try {
-                          await FirebaseAuth.instance.signInWithEmailAndPassword(
-                            email: emailCtrl.text.trim(),
-                            password: passwordCtrl.text.trim(),
-                          );
-                        } on FirebaseAuthException catch (ex) {
-                          setState(() {
-                            switch (ex.code) {
-                              case 'channel-error':
-                                msgError = 'Complete el formulario';
-                                break;
-                              case 'invalid-email':
-                                msgError = 'Email no válido';
-                                break;
-                              case 'INVALID_LOGIN_CREDENTIALS':
-                                msgError = 'Credenciales incorrectas';
-                                break;
-                              case 'user-disabled':
-                                msgError = 'Cuenta desactivada';
-                                break;
-                              default:
-                                msgError = 'Error en el sistema';
-                            }
-                          });
+                    SizedBox(height: 10),
+                    FutureBuilder<User?>(
+                      future: FirebaseAuth.instance.authStateChanges().first,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Error');
+                        } else if (snapshot.hasData) {
+                          return Text(snapshot.data?.email ?? '');
+                        } else {
+                          return Text('');
                         }
                       },
                     ),
-                  ),
-                  //errores
-                  Container(
-                    width: double.infinity,
-                    alignment: Alignment.center,
-                    child: Text(msgError, style: TextStyle(color: Colors.red)),
-                  ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  ListTile(
+                title: Text('Iniciar Sesión',style: TextStyle(color: Colors.pink,fontSize: 25),),
+                onTap: () {
+                  signInWithGoogle();
+                  Navigator.pop(context);
+                },
+              ),
                 ],
               ),
-            ),
+              Column(
+                children: [
+                  ListTile(
+                leading: Icon(MdiIcons.filter,color: Color.fromARGB(231, 242, 255, 0),size: 30,),
+                title: Text('Filtrar eventos finalizados',style: TextStyle(color: Colors.pink,fontSize: 20),),
+                onTap: () {
+                  setState(() {
+                    respuesta = 'finalizado';
+                  });           
+                  Navigator.pop(context);
+                },
+              ),
+                ],
+              ),
+              Column(
+                children: [
+                  ListTile(
+                leading: Icon(MdiIcons.filterMinus,color: Color.fromARGB(231, 242, 255, 0),size: 30,),
+                title: Text('Filtrar eventos Proximos',style: TextStyle(color: Colors.pink,fontSize: 20),),
+                onTap: () {
+                  setState(() {
+                    respuesta = 'proximamente';
+                  });           
+                  Navigator.pop(context);
+                },
+              ),
+                ],
+              ),
+              Column(
+                children: [
+                  ListTile(
+                leading: Icon(MdiIcons.filterRemove,color: Color.fromARGB(231, 242, 255, 0),size: 30,),
+                title: Text('Quitar filtro',style: TextStyle(color: Colors.pink,fontSize: 20),),
+                onTap: () {
+                  setState(() {
+                    respuesta = 'todos';
+                  });           
+                  Navigator.pop(context); 
+                },
+              ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
+    
   }
+
+  void signOut() async {
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
+  }
+
+  signInWithGoogle() async {
+      GoogleSignInAccount? googleUser= await GoogleSignIn().signIn();
+      GoogleSignInAuthentication? googleAuth=await googleUser?.authentication;
+      AuthCredential credential= GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken
+      );
+      UserCredential user=await FirebaseAuth.instance.signInWithCredential(credential);
+      print(user.user?.displayName);
+      
+  }
+
 }
+
